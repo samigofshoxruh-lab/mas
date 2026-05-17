@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Capital Bank Macro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d00;
+  --bg2:#111100;
+  --card:#1a1a00;
+  --card2:#222200;
+  --border:#3a3a00;
+  --y:#f5c800;
+  --y2:#ffd900;
+  --y3:#ffec6e;
+  --yd:#b89200;
+  --text:#f0e88a;
+  --muted:#7a7240;
+  --danger:#ff4444;
+  --ok:#44dd88;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;overflow-x:hidden}
+
+/* GRID BG */
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:48px 48px;opacity:.18;pointer-events:none;z-index:0}
+
+/* ===== SCREENS ===== */
+.screen{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;background:var(--bg);padding:16px;overflow-y:auto}
+.screen.active{display:flex}
+
+/* SETUP SCREEN */
+.setup-card{background:var(--card);border:2px solid var(--y);border-radius:4px;width:100%;max-width:420px;padding:32px 28px;position:relative;animation:fadeUp .3s ease}
+.setup-card::before{content:'';position:absolute;top:-2px;left:24px;right:24px;height:3px;background:var(--y);border-radius:0 0 3px 3px}
+.brand{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--y);line-height:1;margin-bottom:4px}
+.brand-sub{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:28px}
+.setup-desc{font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:20px;padding:10px;background:rgba(245,200,0,.06);border-left:2px solid var(--y);border-radius:2px}
+
+/* AUTH SCREEN */
+.auth-card{background:var(--card);border:2px solid var(--y);border-radius:4px;width:100%;max-width:380px;padding:32px 28px;position:relative;animation:fadeUp .3s ease}
+
+/* FORM ELEMENTS */
+.fl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+.fi,.fsl,.fta{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:10px 12px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;transition:border-color .2s;margin-bottom:12px}
+.fi:focus,.fsl:focus,.fta:focus{border-color:var(--y)}
+.fi::placeholder,.fta::placeholder{color:var(--muted)}
+.fta{min-height:160px;resize:vertical;line-height:1.7;margin-bottom:0}
+.fsl{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7240'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:2px;border:none;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.5px;transition:all .15s;text-transform:uppercase}
+.btn-y{background:var(--y);color:#000;width:100%;margin-top:4px}
+.btn-y:hover{background:var(--y2);transform:translateY(-1px)}
+.btn-y:active{transform:translateY(0)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:10px}
+.btn-ghost:hover{border-color:var(--y);color:var(--y)}
+.btn-danger{background:transparent;border:1px solid rgba(255,68,68,.4);color:var(--danger)}
+.btn-danger:hover{background:rgba(255,68,68,.1)}
+.btn-ok{background:transparent;border:1px solid rgba(68,221,136,.4);color:var(--ok)}
+.btn-ok:hover{background:rgba(68,221,136,.1)}
+.btn-sm{padding:5px 10px;font-size:10px}
+.btn-w{width:100%}
+.err{color:var(--danger);font-size:10px;margin-top:6px;min-height:14px}
+.back-link{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);cursor:pointer;margin-top:14px;transition:color .2s}
+.back-link:hover{color:var(--y)}
+
+/* ===== HEADER ===== */
+header{position:sticky;top:0;z-index:100;background:rgba(13,13,0,.95);backdrop-filter:blur(12px);border-bottom:2px solid var(--y);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px}
+.h-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--y);line-height:1}
+.h-logo span{font-size:10px;display:block;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;color:var(--muted);margin-top:-2px}
+.h-right{display:flex;align-items:center;gap:10px}
+.h-stat{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.h-stat strong{color:var(--y)}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.ub{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:2px;font-size:10px;cursor:pointer;transition:border-color .2s;max-width:140px}
+.ub:hover{border-color:var(--y)}
+.role-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sync-b{padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:2px;color:var(--muted);font-size:10px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.sync-b:hover{border-color:var(--y);color:var(--y)}
+
+/* ===== LAYOUT ===== */
+.app-wrap{position:relative;z-index:1}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 56px)}
+.sidebar{background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+.sb-top{padding:14px}
+.sbl{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-top:12px}
+.sw{position:relative}
+.sw input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:9px 10px 9px 30px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;outline:none;transition:border-color .2s}
+.sw input:focus{border-color:var(--y)}
+.sw input::placeholder{color:var(--muted)}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;pointer-events:none}
+.sb-sec{padding:0 14px 12px;border-bottom:1px solid var(--border)}
+.lf{display:flex;flex-direction:column;gap:3px}
+.lb{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:2px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;transition:all .12s;text-align:left;width:100%}
+.lb:hover{background:var(--card2);color:var(--text)}
+.lb.active{background:var(--card2);border-color:var(--y);color:var(--y)}
+.bdg{margin-left:auto;background:var(--bg);padding:1px 6px;border-radius:1px;font-size:9px;color:var(--muted)}
+.lb.active .bdg{color:var(--y)}
+.tl{display:flex;flex-direction:column;gap:2px}
+.ti{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:2px;cursor:pointer;font-size:11px;color:var(--muted);transition:all .12s}
+.ti:hover{background:var(--card2);color:var(--text)}
+.ti.active{background:var(--card2);color:var(--y)}
+.tc{margin-left:auto;font-size:9px}
+.ti-del{margin-left:4px;background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:11px;opacity:0;transition:opacity .15s;padding:0 3px}
+.ti:hover .ti-del{opacity:1}
+
+/* ===== MAIN ===== */
+.main{padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.mon{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mc{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:14px;position:relative;overflow:hidden}
+.mc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--y);opacity:.5}
+.mcl{font-size:8px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px}
+.mcv{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--y);line-height:1;margin-bottom:2px}
+.mcs{font-size:9px;color:var(--muted)}
+.ctrl{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.vt{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--y)}
+.ss{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:7px 10px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:10px;outline:none;cursor:pointer}
+
+/* CARDS */
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:16px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--y);opacity:0;transition:opacity .15s}
+.card:hover{border-color:var(--y);transform:translateY(-1px);box-shadow:0 4px 20px rgba(245,200,0,.08)}
+.card:hover::before{opacity:1}
+.lt{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:1px;font-size:9px;font-weight:600;letter-spacing:.5px;margin-bottom:9px;border:1px solid}
+.lt-r{color:#ff8888;border-color:rgba(255,136,136,.3);background:rgba(255,136,136,.07)}
+.lt-e{color:#88aaff;border-color:rgba(136,170,255,.3);background:rgba(136,170,255,.07)}
+.lt-u{color:var(--y3);border-color:rgba(255,236,110,.3);background:rgba(255,236,110,.07)}
+.ct{font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.3;color:var(--text)}
+.cp{font-size:10px;color:var(--muted);line-height:1.7;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:12px}
+.cf{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tt{font-size:9px;padding:2px 7px;background:var(--bg);border:1px solid var(--border);border-radius:1px;color:var(--muted)}
+.ca{font-size:9px;color:var(--muted)}
+.cd{font-size:9px;color:var(--muted);margin-left:auto}
+.cpb{position:absolute;top:12px;right:12px;background:var(--bg);border:1px solid var(--border);border-radius:2px;color:var(--muted);font-size:10px;padding:4px 8px;cursor:pointer;transition:all .15s;opacity:0;font-family:'IBM Plex Mono',monospace}
+.card:hover .cpb{opacity:1}
+.cpb:hover{background:var(--y);border-color:var(--y);color:#000}
+.es{grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--muted)}
+.es .ei{font-size:36px;margin-bottom:12px}
+mark.hl{background:rgba(245,200,0,.25);color:var(--y2);border-radius:1px;padding:0 2px}
+
+/* ===== MODALS ===== */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);z-index:300;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.mo.open{display:flex}
+.mb{background:var(--card);border:1px solid var(--y);border-radius:4px;width:100%;max-width:580px;padding:28px;position:relative;animation:fadeUp .2s ease;margin:auto}
+.mb-lg{max-width:760px}
+.mb-sm{max-width:340px}
+.mt2{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:var(--y);margin-bottom:20px}
+.cx{position:absolute;top:12px;right:12px;background:var(--card2);border:1px solid var(--border);border-radius:2px;color:var(--muted);font-size:16px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cx:hover{color:var(--text);border-color:var(--y)}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.ls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.lo{padding:8px;border-radius:2px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;text-align:center;transition:all .12s}
+.lo:hover{border-color:var(--y);color:var(--y)}
+.lo.sel{border-color:var(--y);color:#000;background:var(--y)}
+.ma{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap}
+.vc{font-size:12px;line-height:1.85;color:var(--text);white-space:pre-wrap;margin-top:12px;border-top:1px solid var(--border);padding-top:14px;max-height:50vh;overflow-y:auto}
+.vm{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px;align-items:center}
+.tir{display:flex;gap:6px}
+.bat{padding:0 11px;background:var(--y);border:none;border-radius:2px;color:#000;font-size:14px;cursor:pointer;transition:opacity .15s;font-weight:700}
+.bat:hover{opacity:.85}
+
+/* ADMIN TABLE */
+.at{width:100%;border-collapse:collapse;font-size:11px;min-width:500px}
+.at-wrap{overflow-x:auto}
+.at th{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-size:9px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.at td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.at tr:hover td{background:var(--card2)}
+.rb{padding:2px 8px;border-radius:1px;font-size:9px;letter-spacing:.5px;font-weight:600;text-transform:uppercase}
+.rb-sa{background:rgba(245,200,0,.2);color:var(--y);border:1px solid rgba(245,200,0,.4)}
+.rb-a{background:rgba(255,136,136,.15);color:#ff8888;border:1px solid rgba(255,136,136,.3)}
+.rb-u{background:rgba(136,170,255,.12);color:#88aaff;border:1px solid rgba(136,170,255,.25)}
+.pw-cell{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px}
+.nuf{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:16px}
+@media(max-width:600px){.nuf{grid-template-columns:1fr 1fr}}
+
+/* ROLE COLORS */
+.role-dot.sa{background:var(--y)}
+.role-dot.a{background:#ff8888}
+.role-dot.u{background:#88aaff}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px;max-width:300px}
+.ti2{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:10px 14px;font-size:11px;animation:slideIn .2s ease;word-break:break-word}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.t-ok{border-color:rgba(68,221,136,.5);color:var(--ok)}
+.t-err{border-color:rgba(255,68,68,.5);color:var(--danger)}
+.t-info{border-color:rgba(245,200,0,.4);color:var(--y)}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* MOBILE HAMBURGER */
+.ham{display:none;background:var(--card);border:1px solid var(--border);border-radius:2px;padding:7px 10px;cursor:pointer;color:var(--y);font-size:16px}
+
+/* MOBILE SIDEBAR OVERLAY */
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:98}
+.sb-overlay.open{display:block}
+
+/* SESSION TIMER */
+.sess-timer{font-size:9px;color:var(--muted);padding:0 14px 10px}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--yd)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:-280px;top:56px;height:calc(100vh - 56px);z-index:99;transition:left .25s ease;width:270px;box-shadow:4px 0 20px rgba(0,0,0,.5)}
+  .sidebar.open{left:0}
+  .ham{display:flex}
+  .mon{grid-template-columns:repeat(2,1fr)}
+  .h-stat{display:none}
+}
+@media(max-width:500px){
+  .mon{grid-template-columns:repeat(2,1fr)}
+  .fr{grid-template-columns:1fr}
+  .main{padding:14px}
+  .mb{padding:20px 16px}
+  .cg{grid-template-columns:1fr}
+  .ma{flex-direction:column}
+  .ma .btn{width:100%}
+  header{padding:0 14px}
+  .h-logo{font-size:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div class="screen active" id="setup-screen">
+  <div class="setup-card">
+    <div class="brand">CAPITAL BANK</div>
+    <div class="brand-sub">Macro System</div>
+    <div class="setup-desc">Введите данные для подключения к общей базе данных. Эти данные хранятся только на вашем устройстве.</div>
+    <label class="fl">GitHub Token</label>
+    <input class="fi" id="s-tok" type="password" placeholder="ghp_xxxxxxxxxxxx">
+    <label class="fl">Gist ID</label>
+    <input class="fi" id="s-gid" placeholder="abc123def456...">
+    <button class="btn btn-y" onclick="doConnect()">▶ ПОДКЛЮЧИТЬСЯ</button>
+    <div class="err" id="s-err"></div>
+    <div style="margin-top:12px;font-size:9px;color:var(--muted);line-height:1.6">
+      Нет базы данных? <span style="color:var(--y);cursor:pointer" onclick="doInit()">Создать новую →</span>
+    </div>
+    <div class="err" id="i-err"></div>
+  </div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div class="screen" id="auth-screen">
+  <div class="auth-card">
+    <div class="brand">CAPITAL BANK</div>
+    <div class="brand-sub">Macro System · Вход</div>
+    <label class="fl">Логин</label>
+    <input class="fi" id="a-log" type="text" placeholder="введите логин" autocomplete="username">
+    <label class="fl">Пароль</label>
+    <input class="fi" id="a-pas" type="password" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn btn-y" onclick="doLogin()">▶ ВОЙТИ</button>
+    <div class="err" id="a-err"></div>
+    <div class="back-link" onclick="showSetup()">← Сменить токен / Gist ID</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app-wrap" id="app" style="display:none">
+  <header>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="ham" onclick="toggleSidebar()" id="ham-btn">☰</button>
+      <div class="h-logo">Capital Bank <span>Macro System</span></div>
+    </div>
+    <div class="h-right">
+      <div class="h-stat"><span class="dot" style="background:#ff8888"></span>RU:<strong id="hdr-ru">0</strong></div>
+      <div class="h-stat"><span class="dot" style="background:#88aaff"></span>EN:<strong id="hdr-en">0</strong></div>
+      <div class="h-stat"><span class="dot" style="background:var(--y3)"></span>UZ:<strong id="hdr-uz">0</strong></div>
+      <button class="sync-b" onclick="syncNow()">⟳</button>
+      <div class="ub" onclick="openMo('user-mo')">
+        <div class="role-dot" id="u-rdot"></div>
+        <span id="u-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="sb-overlay" id="sb-ov" onclick="closeSidebar()"></div>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-top">
+        <button class="btn btn-y btn-w" onclick="openNewMo();closeSidebar()">+ НОВЫЙ МАКРОС</button>
+      </div>
+      <div class="sb-sec">
+        <div class="sbl">Поиск</div>
+        <div class="sw"><span class="si">⌕</span>
+          <input type="text" id="s-in" placeholder="Заголовок, текст, тема..." oninput="filter()">
+        </div>
+      </div>
+      <div class="sb-sec">
+        <div class="sbl">Язык</div>
+        <div class="lf">
+          <button class="lb active" data-l="all" onclick="setL(this);closeSidebar()">◈ Все<span class="bdg" id="c-all">0</span></button>
+          <button class="lb" data-l="ru" onclick="setL(this);closeSidebar()"><span class="dot" style="background:#ff8888"></span>Русский<span class="bdg" id="c-ru">0</span></button>
+          <button class="lb" data-l="en" onclick="setL(this);closeSidebar()"><span class="dot" style="background:#88aaff"></span>English<span class="bdg" id="c-en">0</span></button>
+          <button class="lb" data-l="uz" onclick="setL(this);closeSidebar()"><span class="dot" style="background:var(--y3)"></span>O'zbek<span class="bdg" id="c-uz">0</span></button>
+        </div>
+      </div>
+      <div class="sb-sec">
+        <div class="sbl">Темы</div>
+        <div class="tl" id="tl"></div>
+      </div>
+      <div id="adm-sb" style="display:none;padding:14px;border-top:1px solid var(--border);margin-top:auto">
+        <button class="btn btn-ghost btn-w btn-sm" onclick="openAdm();closeSidebar()">⬡ АДМИНИСТРАТОР</button>
+      </div>
+      <div class="sess-timer" id="sess-info"></div>
+    </aside>
+
+    <main class="main">
+      <div class="mon">
+        <div class="mc"><div class="mcl">ВСЕГО</div><div class="mcv" id="m-tot">0</div><div class="mcs">макросов</div></div>
+        <div class="mc"><div class="mcl">РУССКИЙ</div><div class="mcv" id="m-ru">0</div><div class="mcs">макросов</div></div>
+        <div class="mc"><div class="mcl">ENGLISH</div><div class="mcv" id="m-en">0</div><div class="mcs">texts</div></div>
+        <div class="mc"><div class="mcl">O'ZBEK</div><div class="mcv" id="m-uz">0</div><div class="mcs">matn</div></div>
+      </div>
+      <div class="ctrl">
+        <div class="vt" id="vt">ВСЕ МАКРОСЫ</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="ss" onchange="filter()">
+            <option value="n">Новые сначала</option>
+            <option value="o">Старые сначала</option>
+            <option value="a">По алфавиту</option>
+          </select>
+        </div>
+      </div>
+      <div class="cg" id="cg"></div>
+    </main>
+  </div>
+</div>
+
+<!-- NEW/EDIT MODAL -->
+<div class="mo" id="new-mo">
+  <div class="mb">
+    <button class="cx" onclick="closeMo('new-mo')">×</button>
+    <div class="mt2" id="new-mo-title">НОВЫЙ МАКРОС</div>
+    <div class="fg"><label class="fl">Заголовок</label><input class="fi" id="f-ttl" placeholder="Введите заголовок макроса..."></div>
+    <div class="fr">
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Язык</label>
+        <div class="ls">
+          <div class="lo" data-v="ru" onclick="pickL(this)">🇷🇺 RU</div>
+          <div class="lo" data-v="en" onclick="pickL(this)">🇬🇧 EN</div>
+          <div class="lo" data-v="uz" onclick="pickL(this)">🇺🇿 UZ</div>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Тема</label>
+        <select class="fsl" id="f-top" style="margin-bottom:7px"></select>
+        <div class="tir">
+          <input class="fi" id="nt-in" placeholder="Новая тема..." style="margin:0">
+          <button class="bat" onclick="addTop()">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:12px"><label class="fl">Текст макроса</label><textarea class="fta" id="f-body" placeholder="Введите текст макроса..."></textarea></div>
+    <div class="ma">
+      <button class="btn btn-ghost" onclick="closeMo('new-mo')">ОТМЕНА</button>
+      <button class="btn btn-y" onclick="saveText()" id="save-btn">💾 СОХРАНИТЬ</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div class="mo" id="view-mo">
+  <div class="mb mb-lg">
+    <button class="cx" onclick="closeMo('view-mo')">×</button>
+    <div class="vm" id="vm-m"></div>
+    <div class="mt2" id="vm-t" style="margin-bottom:0;font-size:20px"></div>
+    <div class="vc" id="vm-b"></div>
+    <div class="ma">
+      <button class="btn btn-danger" id="v-del" onclick="delText()">🗑 УДАЛИТЬ</button>
+      <button class="btn btn-ghost" id="v-edit" onclick="openEdit()">✏ РЕДАКТИРОВАТЬ</button>
+      <button class="btn btn-ok" onclick="copyNow()">📋 СКОПИРОВАТЬ</button>
+      <button class="btn btn-ghost" onclick="closeMo('view-mo')">ЗАКРЫТЬ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN MODAL -->
+<div class="mo" id="adm-mo">
+  <div class="mb mb-lg">
+    <button class="cx" onclick="closeMo('adm-mo')">×</button>
+    <div class="mt2">⬡ ПАНЕЛЬ АДМИНИСТРАТОРА</div>
+
+    <!-- Add user form -->
+    <div id="add-user-section">
+      <div class="sbl" style="margin-bottom:10px">ДОБАВИТЬ ПОЛЬЗОВАТЕЛЯ</div>
+      <div class="nuf">
+        <div><label class="fl">Логин</label><input class="fi" id="nu-l" placeholder="логин" style="margin:0"></div>
+        <div><label class="fl">Пароль</label><input class="fi" id="nu-p" type="text" placeholder="пароль" style="margin:0"></div>
+        <div><label class="fl">Роль</label><select class="fsl" id="nu-r" style="margin:0">
+          <option value="user">Пользователь</option>
+          <option value="admin">Админ</option>
+          <option value="superadmin" id="sa-opt" style="display:none">Главный админ</option>
+        </select></div>
+        <div style="padding-top:18px"><button class="btn btn-y btn-sm" onclick="addUser()">+ ДОБАВИТЬ</button></div>
+      </div>
+    </div>
+
+    <div class="sbl" style="margin-bottom:10px">ПОЛЬЗОВАТЕЛИ</div>
+    <div class="at-wrap">
+      <table class="at">
+        <thead><tr><th>#</th><th>Логин</th><th>Роль</th><th>Макросов</th><th id="pw-col-h" style="display:none">Пароль</th><th>Действия</th></tr></thead>
+        <tbody id="adm-tb"></tbody>
+      </table>
+    </div>
+    <div class="ma"><button class="btn btn-ghost" onclick="closeMo('adm-mo')">ЗАКРЫТЬ</button></div>
+  </div>
+</div>
+
+<!-- USER MENU -->
+<div class="mo" id="user-mo">
+  <div class="mb mb-sm">
+    <button class="cx" onclick="closeMo('user-mo')">×</button>
+    <div class="mt2" id="um-n"></div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:16px" id="um-r"></div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:16px" id="um-t"></div>
+    <button class="btn btn-danger btn-w" onclick="logout()">🚪 ВЫЙТИ</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ===== CONFIG =====
+const GF='cbmacro-db.json';
+const SESSION_MS=12*60*60*1000; // 12 hours
+let TOKEN='',GIST='',DB={users:[],texts:[],topics:[]};
+let ME=null,sL='all',sT='all',sLV='',vId=null,editId=null;
+let sessTimer=null;
+
+// ===== BOOT =====
+async function boot(){
+  TOKEN=localStorage.getItem('cb_tok')||'';
+  GIST=localStorage.getItem('cb_gist')||'';
+  // Check session
+  const su=localStorage.getItem('cb_user');
+  const st=parseInt(localStorage.getItem('cb_sess_t')||'0');
+  if(TOKEN&&GIST){
+    const ok=await loadDB();
+    if(ok){
+      if(su&&st&&(Date.now()-st<SESSION_MS)){
+        const u=DB.users.find(x=>x.login===su);
+        if(u){ME=u;startSession();showApp();return}
+      }
+      showAuth();return;
+    }
+  }
+  showSetup();
+}
+
+// ===== SCREENS =====
+function showSetup(){document.getElementById('setup-screen').classList.add('active');document.getElementById('auth-screen').classList.remove('active');document.getElementById('app').style.display='none'}
+function showAuth(){document.getElementById('auth-screen').classList.add('active');document.getElementById('setup-screen').classList.remove('active');document.getElementById('app').style.display='none'}
+function showApp(){document.getElementById('setup-screen').classList.remove('active');document.getElementById('auth-screen').classList.remove('active');document.getElementById('app').style.display='block';initApp()}
+function showSetupFromAuth(){showSetup()}
+
+// ===== GIST =====
+async function loadDB(){
+  try{
+    const r=await fetch(`https://api.github.com/gists/${GIST}`,{headers:{Authorization:`token ${TOKEN}`}});
+    if(!r.ok)return false;
+    const g=await r.json();
+    const raw=g.files[GF]?.content;
+    if(!raw)return false;
+    DB=JSON.parse(raw);return true;
+  }catch{return false}
+}
+async function saveDB(){
+  try{
+    const r=await fetch(`https://api.github.com/gists/${GIST}`,{
+      method:'PATCH',
+      headers:{Authorization:`token ${TOKEN}`,'Content-Type':'application/json'},
+      body:JSON.stringify({files:{[GF]:{content:JSON.stringify(DB,null,2)}}})
+    });
+    return r.ok;
+  }catch{return false}
+}
+
+// ===== SETUP =====
+async function doConnect(){
+  const tok=document.getElementById('s-tok').value.trim();
+  const gid=document.getElementById('s-gid').value.trim();
+  const err=document.getElementById('s-err');
+  if(!tok||!gid){err.textContent='Введите токен и Gist ID';return}
+  err.textContent='Подключение...';
+  TOKEN=tok;GIST=gid;
+  const ok=await loadDB();
+  if(ok){localStorage.setItem('cb_tok',tok);localStorage.setItem('cb_gist',gid);err.textContent='';showAuth()}
+  else{err.textContent='Не удалось подключиться. Проверьте данные.';TOKEN='';GIST=''}
+}
+async function doInit(){
+  const tok=document.getElementById('s-tok').value.trim();
+  const err=document.getElementById('i-err');
+  if(!tok){err.textContent='Сначала введите токен выше';return}
+  err.textContent='Создание базы данных...';
+  try{
+    const init={
+      users:[{login:'superadmin',pass:'Admin2024!',role:'superadmin'}],
+      texts:[],
+      topics:['Приветствие','Отказ','Одобрение','Информация','Разное']
+    };
+    const r=await fetch('https://api.github.com/gists',{
+      method:'POST',
+      headers:{Authorization:`token ${tok}`,'Content-Type':'application/json'},
+      body:JSON.stringify({description:'Capital Bank Macro DB',public:false,files:{[GF]:{content:JSON.stringify(init,null,2)}}})
+    });
+    if(!r.ok){err.textContent='Ошибка. Проверьте токен (нужен scope: gist).';return}
+    const g=await r.json();
+    TOKEN=tok;GIST=g.id;
+    localStorage.setItem('cb_tok',tok);localStorage.setItem('cb_gist',g.id);
+    DB=init;err.textContent='';
+    alert(`✅ База создана!\n\nGist ID: ${g.id}\n\nСупер-админ: superadmin\nПароль: Admin2024!\n\n⚠️ Обязательно смените пароль!\nДайте Gist ID коллегам для подключения.`);
+    showAuth();
+  }catch(e){err.textContent='Ошибка: '+e.message}
+}
+
+// ===== AUTH =====
+async function doLogin(){
+  const login=document.getElementById('a-log').value.trim();
+  const pass=document.getElementById('a-pas').value;
+  const err=document.getElementById('a-err');
+  if(!login||!pass){err.textContent='Заполните все поля';return}
+  err.textContent='Проверка...';
+  const ok=await loadDB();
+  if(!ok){err.textContent='Ошибка соединения с базой';return}
+  const u=DB.users.find(x=>x.login===login&&x.pass===pass);
+  if(!u){err.textContent='Неверный логин или пароль';return}
+  ME=u;
+  localStorage.setItem('cb_user',u.login);
+  localStorage.setItem('cb_sess_t',Date.now().toString());
+  startSession();showApp();
+}
+function logout(){
+  ME=null;
+  localStorage.removeItem('cb_user');
+  localStorage.removeItem('cb_sess_t');
+  if(sessTimer)clearInterval(sessTimer);
+  closeMo('user-mo');showAuth();
+}
+function startSession(){
+  if(sessTimer)clearInterval(sessTimer);
+  sessTimer=setInterval(()=>{
+    const st=parseInt(localStorage.getItem('cb_sess_t')||'0');
+    const left=SESSION_MS-(Date.now()-st);
+    if(left<=0){toast('Сессия истекла. Войдите заново.','i');logout();return}
+    const h=Math.floor(left/3600000);
+    const m=Math.floor((left%3600000)/60000);
+    const el=document.getElementById('sess-info');
+    if(el)el.textContent=`Сессия: ${h}ч ${m}м`;
+    // warn 15 min before
+    if(left<900000&&left>880000)toast('Сессия истекает через 15 минут','i');
+  },30000);
+  // initial display
+  const st=parseInt(localStorage.getItem('cb_sess_t')||'0');
+  const left=SESSION_MS-(Date.now()-st);
+  const h=Math.floor(left/3600000),m=Math.floor((left%3600000)/60000);
+  const el=document.getElementById('sess-info');
+  if(el)el.textContent=`Сессия: ${h}ч ${m}м`;
+}
+
+// show setup from auth
+function showSetup(){
+  document.getElementById('setup-screen').classList.add('active');
+  document.getElementById('auth-screen').classList.remove('active');
+  document.getElementById('app').style.display='none';
+}
+
+// ===== APP =====
+function initApp(){
+  const rd=document.getElementById('u-rdot');
+  rd.className='role-dot '+(ME.role==='superadmin'?'sa':ME.role==='admin'?'a':'u');
+  document.getElementById('u-name').textContent=ME.login;
+  // Admin panel visibility
+  const canAdmin=ME.role==='superadmin'||ME.role==='admin';
+  document.getElementById('adm-sb').style.display=canAdmin?'block':'none';
+  renderTopics();filter();updateMon();
+}
+async function syncNow(){
+  toast('Синхронизация...','i');
+  const ok=await loadDB();
+  if(ok){filter();renderTopics();updateMon();toast('✓ Синхронизировано','ok')}
+  else toast('✗ Ошибка синхронизации','err');
+}
+
+// ===== MONITOR =====
+function updateMon(){
+  const ru=DB.texts.filter(t=>t.lang==='ru').length;
+  const en=DB.texts.filter(t=>t.lang==='en').length;
+  const uz=DB.texts.filter(t=>t.lang==='uz').length;
+  const tot=DB.texts.length;
+  set('m-tot',tot);set('m-ru',ru);set('m-en',en);set('m-uz',uz);
+  set('hdr-ru',ru);set('hdr-en',en);set('hdr-uz',uz);
+  set('c-all',tot);set('c-ru',ru);set('c-en',en);set('c-uz',uz);
+}
+function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v}
+
+// ===== TOPICS =====
+function renderTopics(){
+  const cnt={};DB.texts.forEach(t=>{cnt[t.topic]=(cnt[t.topic]||0)+1});
+  const canDelTop=ME.role==='superadmin'||ME.role==='admin';
+  let h=`<div class="ti ${sT==='all'?'active':''}" data-t="all" onclick="setT(this);closeSidebar()">◈ Все<span class="tc">${DB.texts.length}</span></div>`;
+  (DB.topics||[]).forEach(tp=>{
+    h+=`<div class="ti ${sT===tp?'active':''}" data-t="${esc(tp)}" onclick="setT(this);closeSidebar()">
+      # ${esc(tp)}<span class="tc">${cnt[tp]||0}</span>
+      ${canDelTop?`<button class="ti-del" onclick="event.stopPropagation();delTopic('${esc(tp)}')" title="Удалить тему">✕</button>`:''}
+    </div>`;
+  });
+  document.getElementById('tl').innerHTML=h;
+}
+function renderTopSel(){
+  const s=document.getElementById('f-top');
+  s.innerHTML='<option value="">— выберите —</option>';
+  (DB.topics||[]).forEach(tp=>s.innerHTML+=`<option value="${esc(tp)}">${esc(tp)}</option>`);
+}
+async function addTop(){
+  const v=document.getElementById('nt-in').value.trim();
+  if(!v){toast('Введите название темы','err');return}
+  if(DB.topics.includes(v)){toast('Такая тема уже есть','err');return}
+  DB.topics.push(v);
+  const ok=await saveDB();
+  if(ok){renderTopSel();renderTopics();document.getElementById('f-top').value=v;document.getElementById('nt-in').value='';toast('✓ Тема добавлена','ok')}
+  else toast('✗ Ошибка','err');
+}
+async function delTopic(tp){
+  if(!confirm(`Удалить тему "${tp}"?`))return;
+  DB.topics=DB.topics.filter(x=>x!==tp);
+  const ok=await saveDB();
+  if(ok){if(sT===tp){sT='all';document.querySelectorAll('.ti').forEach(i=>i.classList.remove('active'))}renderTopics();filter();toast(`🗑 Тема "${tp}" удалена`,'ok')}
+  else toast('✗ Ошибка','err');
+}
+
+// ===== FILTERS =====
+function setL(btn){sL=btn.dataset.l;document.querySelectorAll('.lb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');filter()}
+function setT(el){sT=el.dataset.t;document.querySelectorAll('.ti').forEach(i=>i.classList.remove('active'));el.classList.add('active');filter()}
+function filter(){
+  const q=(document.getElementById('s-in')?.value||'').trim().toLowerCase();
+  const srt=document.querySelector('.ss')?.value||'n';
+  let list=DB.texts.filter(t=>{
+    const lk=sL==='all'||t.lang===sL;
+    const tk=sT==='all'||t.topic===sT;
+    const sk=!q||t.title.toLowerCase().includes(q)||t.body.toLowerCase().includes(q)||(t.topic||'').toLowerCase().includes(q)||(t.author||'').toLowerCase().includes(q);
+    return lk&&tk&&sk;
+  });
+  if(srt==='n')list.sort((a,b)=>b.id-a.id);
+  else if(srt==='o')list.sort((a,b)=>a.id-b.id);
+  else list.sort((a,b)=>a.title.localeCompare(b.title));
+  const ll={all:'ВСЕ МАКРОСЫ',ru:'РУССКИЙ',en:'ENGLISH',uz:"O'ZBEK"};
+  let ttl=ll[sL]||'ВСЕ МАКРОСЫ';
+  if(sT!=='all')ttl+=` / ${sT.toUpperCase()}`;
+  if(q)ttl+=` / "${q}"`;
+  set('vt',ttl);
+  renderCards(list,q);renderTopics();updateMon();
+}
+function hl(s,q){
+  if(!q)return esc(s);
+  const re=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return esc(s).replace(re,'<mark class="hl">$1</mark>');
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function renderCards(list,q=''){
+  const g=document.getElementById('cg');
+  if(!list.length){g.innerHTML=`<div class="es"><div class="ei">◻</div><p style="font-size:12px">${q||sT!=='all'?'Ничего не найдено.':'Нет макросов. Нажмите «Новый макрос»!'}</p></div>`;return}
+  const ln={ru:'🇷🇺 RU',en:'🇬🇧 EN',uz:'🇺🇿 UZ'};
+  const lc={ru:'lt-r',en:'lt-e',uz:'lt-u'};
+  g.innerHTML=list.map(t=>`
+    <div class="card" onclick="openView(${t.id})">
+      <button class="cpb" onclick="event.stopPropagation();copyById(${t.id})">📋 КОПИРОВАТЬ</button>
+      <div class="lt ${lc[t.lang]||'lt-r'}">${ln[t.lang]||t.lang}</div>
+      <div class="ct">${hl(t.title,q)}</div>
+      <div class="cp">${hl(t.body.slice(0,240),q)}</div>
+      <div class="cf">
+        <span class="tt">${esc(t.topic||'—')}</span>
+        <span class="ca">✍ ${esc(t.author||'?')}</span>
+        <span class="cd">${esc(t.date)}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ===== NEW / EDIT =====
+function openNewMo(){
+  editId=null;
+  document.getElementById('f-ttl').value='';
+  document.getElementById('f-body').value='';
+  sLV='';
+  document.querySelectorAll('.lo').forEach(o=>{o.className='lo'});
+  renderTopSel();
+  document.getElementById('new-mo-title').textContent='НОВЫЙ МАКРОС';
+  document.getElementById('save-btn').textContent='💾 СОХРАНИТЬ';
+  openMo('new-mo');
+}
+function openEdit(){
+  const t=DB.texts.find(x=>x.id===vId);
+  if(!t)return;
+  editId=vId;
+  document.getElementById('f-ttl').value=t.title;
+  document.getElementById('f-body').value=t.body;
+  sLV=t.lang;
+  renderTopSel();
+  document.getElementById('f-top').value=t.topic||'';
+  document.querySelectorAll('.lo').forEach(o=>{o.className='lo';if(o.dataset.v===t.lang)o.classList.add('sel')});
+  document.getElementById('new-mo-title').textContent='РЕДАКТИРОВАТЬ МАКРОС';
+  document.getElementById('save-btn').textContent='✏ ОБНОВИТЬ';
+  closeMo('view-mo');openMo('new-mo');
+}
+function pickL(el){document.querySelectorAll('.lo').forEach(o=>o.className='lo');sLV=el.dataset.v;el.classList.add('sel')}
+async function saveText(){
+  const ttl=document.getElementById('f-ttl').value.trim();
+  const body=document.getElementById('f-body').value.trim();
+  const top=document.getElementById('f-top').value||'Разное';
+  if(!ttl){toast('Введите заголовок','err');return}
+  if(!body){toast('Введите текст','err');return}
+  if(!sLV){toast('Выберите язык','err');return}
+  const date=new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'short',year:'numeric'});
+  if(editId){
+    const i=DB.texts.findIndex(x=>x.id===editId);
+    if(i!==-1){DB.texts[i]={...DB.texts[i],title:ttl,body,lang:sLV,topic:top,editedBy:ME.login,date}}
+  }else{
+    DB.texts.push({id:Date.now(),title:ttl,body,lang:sLV,topic:top,author:ME.login,date});
+  }
+  const ok=await saveDB();
+  if(ok){toast(editId?'✓ Макрос обновлён':'✓ Макрос сохранён','ok');closeMo('new-mo');filter()}
+  else toast('✗ Ошибка сохранения','err');
+  editId=null;
+}
+
+// ===== VIEW =====
+function openView(id){
+  const t=DB.texts.find(x=>x.id===id);if(!t)return;vId=id;
+  const ln={ru:'🇷🇺 Русский',en:'🇬🇧 English',uz:"🇺🇿 O'zbek"};
+  const lc={ru:'lt-r',en:'lt-e',uz:'lt-u'};
+  document.getElementById('vm-m').innerHTML=`<span class="lt ${lc[t.lang]||'lt-r'}">${ln[t.lang]||t.lang}</span><span class="tt">${esc(t.topic||'')}</span><span class="ca" style="margin-left:4px">✍ ${esc(t.author||'?')}</span><span class="cd" style="margin-left:auto">${esc(t.date)}</span>`;
+  document.getElementById('vm-t').textContent=t.title;
+  document.getElementById('vm-b').textContent=t.body;
+  // Permissions: superadmin/admin can delete all; user only own
+  const canDel=ME.role==='superadmin'||ME.role==='admin'||t.author===ME.login;
+  const canEdit=ME.role==='superadmin'||ME.role==='admin'||t.author===ME.login;
+  document.getElementById('v-del').style.display=canDel?'':'none';
+  document.getElementById('v-edit').style.display=canEdit?'':'none';
+  openMo('view-mo');
+}
+async function delText(){
+  if(!vId||!confirm('Удалить этот макрос?'))return;
+  DB.texts=DB.texts.filter(t=>t.id!==vId);
+  const ok=await saveDB();
+  if(ok){toast('🗑 Удалено','ok');closeMo('view-mo');filter()}else toast('✗ Ошибка','err');
+}
+function copyNow(){copyById(vId)}
+function copyById(id){
+  const t=DB.texts.find(x=>x.id===id);if(!t)return;
+  const copy=()=>{const ta=document.createElement('textarea');ta.value=t.body;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('📋 Скопировано!','ok')}catch{toast('✗ Ошибка копирования','err')}ta.remove()};
+  if(navigator.clipboard){navigator.clipboard.writeText(t.body).then(()=>toast('📋 Скопировано!','ok')).catch(copy)}else copy();
+}
+
+// ===== ADMIN =====
+function openAdm(){renderAdm();openMo('adm-mo')}
+function renderAdm(){
+  const cnt={};DB.texts.forEach(t=>{cnt[t.author]=(cnt[t.author]||0)+1});
+  const isSA=ME.role==='superadmin';
+  // Show/hide superadmin role option
+  const saOpt=document.getElementById('sa-opt');
+  if(saOpt)saOpt.style.display=isSA?'block':'none';
+  // Show password column only for superadmin
+  const pwH=document.getElementById('pw-col-h');
+  if(pwH)pwH.style.display=isSA?'':'none';
+  // Show add user only for superadmin or admin (but admin can only add users)
+  const addSec=document.getElementById('add-user-section');
+  if(addSec)addSec.style.display=(isSA||ME.role==='admin')?'block':'none';
+  // Limit admin to only add users (not admin/superadmin)
+  const nuR=document.getElementById('nu-r');
+  if(nuR&&ME.role==='admin'){
+    nuR.innerHTML='<option value="user">Пользователь</option>';
+  }
+  document.getElementById('adm-tb').innerHTML=DB.users.map((u,i)=>{
+    const roleLabel=u.role==='superadmin'?'Главный Админ':u.role==='admin'?'Админ':'Пользователь';
+    const rbCls=u.role==='superadmin'?'rb-sa':u.role==='admin'?'rb-a':'rb-u';
+    const isMe=u.login===ME.login;
+    const canDel=isSA&&!isMe;
+    const canChRole=isSA&&!isMe;
+    const canChPw=isSA;
+    return `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td><strong>${esc(u.login)}</strong>${isMe?' <span style="color:var(--muted);font-size:9px">(вы)</span>':''}</td>
+      <td>
+        ${canChRole?`<select class="fsl" style="margin:0;padding:3px 22px 3px 6px;font-size:9px" onchange="changeRole('${esc(u.login)}',this.value)">
+          <option value="user"${u.role==='user'?' selected':''}>Пользователь</option>
+          <option value="admin"${u.role==='admin'?' selected':''}>Админ</option>
+          <option value="superadmin"${u.role==='superadmin'?' selected':''}>Главный Админ</option>
+        </select>`:`<span class="rb ${rbCls}">${roleLabel}</span>`}
+      </td>
+      <td>${cnt[u.login]||0}</td>
+      ${isSA?`<td class="pw-cell">${esc(u.pass)} ${canChPw?`<button class="btn btn-ghost btn-sm" onclick="changePw('${esc(u.login)}')" style="margin-left:6px">✏</button>`:''}  </td>`:''}
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        ${canDel?`<button class="btn btn-danger btn-sm" onclick="removeUser('${esc(u.login)}')">✕</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+async function addUser(){
+  const l=document.getElementById('nu-l').value.trim();
+  const p=document.getElementById('nu-p').value.trim();
+  const r=document.getElementById('nu-r').value;
+  if(!l||!p){toast('Заполните логин и пароль','err');return}
+  if(DB.users.find(u=>u.login===l)){toast('Такой логин уже существует','err');return}
+  // admin can only add users, not admins
+  const role=(ME.role==='admin'&&r!=='user')?'user':r;
+  DB.users.push({login:l,pass:p,role});
+  const ok=await saveDB();
+  if(ok){toast(`✓ ${l} добавлен (${role})`,'ok');document.getElementById('nu-l').value='';document.getElementById('nu-p').value='';renderAdm()}
+  else toast('✗ Ошибка','err');
+}
+async function removeUser(login){
+  if(!confirm(`Удалить пользователя "${login}"?`))return;
+  DB.users=DB.users.filter(u=>u.login!==login);
+  const ok=await saveDB();
+  if(ok){toast(`🗑 ${login} удалён`,'ok');renderAdm()}else toast('✗ Ошибка','err');
+}
+async function changeRole(login,role){
+  const u=DB.users.find(x=>x.login===login);
+  if(!u)return;u.role=role;
+  const ok=await saveDB();
+  if(ok)toast(`✓ Роль ${login} изменена на ${role}`,'ok');
+  else toast('✗ Ошибка','err');
+}
+async function changePw(login){
+  const np=prompt(`Новый пароль для "${login}":`);
+  if(!np||!np.trim())return;
+  const u=DB.users.find(x=>x.login===login);
+  if(!u)return;u.pass=np.trim();
+  const ok=await saveDB();
+  if(ok){toast(`✓ Пароль ${login} изменён`,'ok');renderAdm()}else toast('✗ Ошибка','err');
+}
+
+// ===== USER MENU =====
+document.getElementById('ub') && document.getElementById('ub').addEventListener('click',openUserMenu);
+function openUserMenu(){
+  document.getElementById('um-n').textContent=ME.login;
+  const roleNames={superadmin:'⭐ Главный Администратор',admin:'🔴 Администратор',user:'🔵 Пользователь'};
+  document.getElementById('um-r').textContent=roleNames[ME.role]||ME.role;
+  const st=parseInt(localStorage.getItem('cb_sess_t')||'0');
+  const left=SESSION_MS-(Date.now()-st);
+  const h=Math.floor(left/3600000),m=Math.floor((left%3600000)/60000);
+  document.getElementById('um-t').textContent=`Сессия: ещё ${h}ч ${m}м`;
+  openMo('user-mo');
+}
+document.querySelector('.ub').onclick=openUserMenu;
+
+// ===== SIDEBAR MOBILE =====
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  const ov=document.getElementById('sb-ov');
+  sb.classList.toggle('open');
+  ov.classList.toggle('open');
+}
+function closeSidebar(){
+  if(window.innerWidth<=900){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sb-ov').classList.remove('open');
+  }
+}
+
+// ===== MODAL =====
+function openMo(id){document.getElementById(id).classList.add('open')}
+function closeMo(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mo.open').forEach(m=>m.classList.remove('open'))});
+
+// ===== TOAST =====
+function toast(msg,type=''){
+  const el=document.createElement('div');
+  el.className=`ti2${type==='ok'?' t-ok':type==='err'?' t-err':type==='i'?' t-info':''}`;
+  el.textContent=msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+// ===== ENTER KEY LOGIN =====
+document.getElementById('a-pas').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+document.getElementById('s-gid').addEventListener('keydown',e=>{if(e.key==='Enter')doConnect()});
+
+boot();
+</script>
+</body>
+</html>
